@@ -1,0 +1,38 @@
+# .dockerignore
+
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Variables de entorno sensibles
+.env
+.env.*
+
+# Control de versiones
+.git/
+.gitignore
+
+# Archivos de Python compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos estáticos y media (se generan en el contenedor)
+staticfiles/
+media/
+
+# Archivos del sistema
+.DS_Store
+*.log
+
+# Documentación y archivos de desarrollo
+README.md
+docs/
+*.md
+
+# Tests y coverage
+.coverage
+htmlcov/
+

@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nueva votación — {{ team.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-hero {
+        background: linear-gradient(135deg, {{ team.primary_color }} 0%, {{ team.secondary_color }} 100%);
+        border-radius: 1.2rem;
+        padding: 1.75rem 2rem;
+        color: #fff;
+        margin-bottom: 1.75rem;
+    }
+    .option-row {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        margin-bottom: .65rem;
+    }
+    .option-row .form-control { flex: 1; }
+    .weight-field { width: 90px; flex-shrink: 0; }
+    .weight-label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+    .btn-remove-option {
+        background: none;
+        border: 1px solid #fca5a5;
+        color: #ef4444;
+        border-radius: .5rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: background .15s;
+        padding: 0;
+    }
+    .btn-remove-option:hover { background: #fef2f2; }
+    .btn-add-option {
+        border: 1.5px dashed var(--border);
+        background: transparent;
+        color: var(--muted);
+        border-radius: .65rem;
+        padding: .55rem 1rem;
+        font-size: .85rem;
+        font-weight: 600;
+        width: 100%;
+        transition: border-color .2s, color .2s;
+        cursor: pointer;
+    }
+    .btn-add-option:hover {
+        border-color: var(--red);
+        color: var(--red);
+    }
+    .type-card {
+        border: 2px solid var(--border);
+        border-radius: .85rem;
+        padding: 1rem;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+        flex: 1;
+    }
+    .type-card:hover { border-color: var(--red); }
+    .type-card input[type="radio"] { display: none; }
+    .type-card.selected {
+        border-color: var(--red);
+        background: var(--red-light);
+    }
+    .type-card .type-icon {
+        font-size: 1.5rem;
+        margin-bottom: .4rem;
+    }
+    #weighted-hint { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:detail' team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                {{ team.name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">Nueva votación</li>
+    </ol>
+</nav>
+
+<!-- Hero -->
+<div class="create-hero">
+    <div class="d-flex align-items-center gap-3" style="position:relative;z-index:1;">
+        <div style="width:48px;height:48px;border-radius:.85rem;background:rgba(255,255,255,.18);
+                    display:flex;align-items:center;justify-content:center;font-size:1.4rem;">
+            <i class="bi bi-ballot-check"></i>
+        </div>
+        <div>
+            <h1 class="fw-black mb-0" style="font-size:1.5rem;letter-spacing:-.6px;">Nueva votación</h1>
+            <p class="mb-0" style="font-size:.85rem;opacity:.8;">en <strong>{{ team.name }}</strong></p>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario -->
+<form method="post" id="poll-form">
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+        <!-- Columna principal -->
+        <div class="col-lg-7">
+
+            <!-- Datos básicos -->
+            <div class="card p-4 mb-4">
+                <p class="section-label mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                    <i class="bi bi-info-circle me-2"></i>Información básica
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label" for="id_title">Título *</label>
+                    <input type="text" id="id_title" name="title" class="form-control"
+                           placeholder="ej. ¿Cuál es el mejor horario para la reunión?"
+                           value="{{ form_data.title|default:'' }}" required autofocus>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label" for="id_description">Descripción</label>
+                    <textarea id="id_description" name="description" class="form-control"
+                              rows="3" placeholder="Agrega contexto o instrucciones para los votantes...">{{ form_data.description|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Opciones -->
+            <div class="card p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <p class="section-label mb-0" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                        <i class="bi bi-list-ul me-2"></i>Opciones <span style="font-size:.68rem;">(mín. 2)</span>
+                    </p>
+                    <span id="weighted-hint" class="badge rounded-pill"
+                          style="background:rgba(59,130,246,.1);color:#2563eb;border:1px solid rgba(59,130,246,.2);font-size:.7rem;">
+                        Ponderada — ajusta los pesos
+                    </span>
+                </div>
+
+                <!-- Encabezado de columnas ponderadas -->
+                <div id="options-header" class="d-none">
+                    <div class="d-flex gap-2 mb-1 px-1">
+                        <span class="weight-label flex-grow-1">Opción</span>
+                        <span class="weight-label weight-field text-center">Peso</span>
+                        <span style="width:32px;"></span>
+                    </div>
+                </div>
+
+                <div id="options-list"></div>
+
+                <button type="button" class="btn-add-option mt-2" id="btn-add-option">
+                    <i class="bi bi-plus-lg me-1"></i>Agregar opción
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Columna lateral -->
+        <div class="col-lg-5">
+
+            <!-- Tipo de votación -->
+            <div class="card p-4 mb-4">
+                <p class="section-label mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                    <i class="bi bi-sliders me-2"></i>Tipo de votación
+                </p>
+                <div class="d-flex gap-2">
+                    <label class="type-card selected" id="card-simple">
+                        <input type="radio" name="type" value="simple" checked>
+                        <div class="type-icon">🗳️</div>
+                        <div class="fw-bold" style="font-size:.9rem;">Simple</div>
+                        <div class="text-secondary" style="font-size:.76rem;">Un voto, un valor igual</div>
+                    </label>
+                    <label class="type-card" id="card-weighted">
+                        <input type="radio" name="type" value="weighted">
+                        <div class="type-icon">⚖️</div>
+                        <div class="fw-bold" style="font-size:.9rem;">Ponderada</div>
+                        <div class="text-secondary" style="font-size:.76rem;">Cada opción tiene un peso</div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Configuración avanzada -->
+            <div class="card p-4 mb-4">
+                <p class="section-label mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                    <i class="bi bi-gear me-2"></i>Configuración
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label" for="id_deadline">Fecha límite</label>
+                    <input type="datetime-local" id="id_deadline" name="deadline" class="form-control"
+                           value="{{ form_data.deadline|default:'' }}">
+                    <div class="form-text">Deja en blanco para que no expire.</div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label" for="id_required_votes">Votos para cerrar automáticamente</label>
+                    <input type="number" id="id_required_votes" name="required_votes" class="form-control"
+                           min="0" placeholder="0 = sin límite"
+                           value="{{ form_data.required_votes|default:'0' }}">
+                    <div class="form-text">La votación se cierra al alcanzar este número de votos.</div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary fw-bold py-2">
+                    <i class="bi bi-check2-circle me-2"></i>Crear votación
+                </button>
+                <a href="{% url 'teams:detail' team.slug %}" class="btn btn-outline-secondary fw-semibold">
+                    Cancelar
+                </a>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    let optionCount = 0;
+    let isWeighted = false;
+
+    const optionsList = document.getElementById('options-list');
+    const optionsHeader = document.getElementById('options-header');
+    const weightedHint = document.getElementById('weighted-hint');
+    const cardSimple = document.getElementById('card-simple');
+    const cardWeighted = document.getElementById('card-weighted');
+
+    function addOption(defaultText = '', defaultWeight = '1') {
+        optionCount++;
+        const row = document.createElement('div');
+        row.className = 'option-row';
+        row.dataset.index = optionCount;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'option_text';
+        input.className = 'form-control';
+        input.placeholder = `Opción ${optionCount}`;
+        input.value = defaultText;
+        input.required = true;
+
+        const weightInput = document.createElement('input');
+        weightInput.type = 'number';
+        weightInput.name = 'option_weight';
+        weightInput.className = 'form-control weight-field weighted-only';
+        weightInput.placeholder = '1';
+        weightInput.min = '0.1';
+        weightInput.step = '0.1';
+        weightInput.value = defaultWeight;
+        weightInput.style.display = isWeighted ? '' : 'none';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-remove-option';
+        removeBtn.innerHTML = '<i class="bi bi-x" style="font-size:.85rem;"></i>';
+        removeBtn.title = 'Eliminar opción';
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+            updateRemoveButtons();
+        });
+
+        row.appendChild(input);
+        row.appendChild(weightInput);
+        row.appendChild(removeBtn);
+        optionsList.appendChild(row);
+        updateRemoveButtons();
+        input.focus();
+    }
+
+    function updateRemoveButtons() {
+        const rows = optionsList.querySelectorAll('.option-row');
+        rows.forEach((row, i) => {
+            const btn = row.querySelector('.btn-remove-option');
+            btn.disabled = rows.length <= 2;
+            btn.style.opacity = rows.length <= 2 ? '.35' : '1';
+            btn.style.cursor = rows.length <= 2 ? 'not-allowed' : 'pointer';
+        });
+    }
+
+    function setWeightedMode(weighted) {
+        isWeighted = weighted;
+        document.querySelectorAll('.weighted-only').forEach(el => {
+            el.style.display = weighted ? '' : 'none';
+        });
+        optionsHeader.classList.toggle('d-none', !weighted);
+        weightedHint.style.display = weighted ? '' : 'none';
+    }
+
+    // Tipo de votación
+    cardSimple.addEventListener('click', () => {
+        cardSimple.classList.add('selected');
+        cardWeighted.classList.remove('selected');
+        setWeightedMode(false);
+    });
+    cardWeighted.addEventListener('click', () => {
+        cardWeighted.classList.add('selected');
+        cardSimple.classList.remove('selected');
+        setWeightedMode(true);
+    });
+
+    // Agregar opción
+    document.getElementById('btn-add-option').addEventListener('click', () => addOption());
+
+    // Arrancar con 2 opciones vacías
+    addOption();
+    addOption();
+
+    // Validación antes de submit
+    document.getElementById('poll-form').addEventListener('submit', function (e) {
+        const texts = Array.from(optionsList.querySelectorAll('input[name="option_text"]'))
+                           .map(i => i.value.trim()).filter(Boolean);
+        if (texts.length < 2) {
+            e.preventDefault();
+            alert('Agrega al menos 2 opciones antes de crear la votación.');
+        }
+    });
+})();
+</script>
+{% endblock %}
