@@ -151,3 +151,6 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', os.getenv('EMAIL_HOST_USER'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+if 'test' in __import__('sys').argv:
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
