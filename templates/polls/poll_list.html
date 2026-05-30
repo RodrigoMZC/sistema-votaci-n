@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Encuestas - {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Encuestas - <strong>{{ team.name }}</strong></h1>
+            <p class="text-muted">Participa en las votaciones activas del equipo</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if is_admin %}
+                <a href="{% url 'teams:detail' team.slug %}" class="btn btn-primary">
+                    ← Volver al Equipo
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Encuestas Activas</h5>
+                    <h2 class="text-primary">{{ polls|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Encuestas -->
+    {% if polls %}
+        <div class="row">
+            {% for poll in polls %}
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ poll.title }}</h5>
+                            {% if poll.description %}
+                                <p class="card-text text-muted small">{{ poll.description|truncatewords:15 }}</p>
+                            {% endif %}
+
+                            <!-- Información de la encuesta -->
+                            <div class="small text-muted mb-3">
+                                <div>
+                                    <i class="bi bi-check-circle"></i>
+                                    <strong>{{ poll.options.count }}</strong> opciones
+                                </div>
+                                <div>
+                                    <i class="bi bi-people"></i>
+                                    <strong>{{ poll.total_votes|default:0 }}</strong> votos
+                                </div>
+                                {% if poll.deadline %}
+                                    <div>
+                                        <i class="bi bi-calendar"></i>
+                                        Vence: <strong>{{ poll.deadline|date:"d/m/Y H:i" }}</strong>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Tipo de votación -->
+                            <div class="mb-3">
+                                {% if poll.type == 'simple' %}
+                                    <span class="badge bg-success">Votación Simple</span>
+                                {% else %}
+                                    <span class="badge bg-info">Votación Ponderada</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'polls:detail' team.slug poll.id %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-eye"></i> Ver y Votar
+                                </a>
+                                <a href="{% url 'polls:results' team.slug poll.id %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-graph-up"></i> Ver Resultados
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            <strong>No hay encuestas activas</strong> en este equipo en este momento.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

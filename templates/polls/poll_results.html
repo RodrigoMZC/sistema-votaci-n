@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultados - {{ poll.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'polls:detail' poll.team.slug poll.id %}" class="btn btn-outline-secondary btn-sm mb-3">
+                ← Volver a la Votación
+            </a>
+            <h1>Resultados: {{ poll.title }}</h1>
+        </div>
+    </div>
+
+    <!-- Información General -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Resumen</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-primary">{{ total_votes }}</h4>
+                                <p class="text-muted">Votos Totales</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-info">{{ poll.options.count }}</h4>
+                                <p class="text-muted">Opciones</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4>
+                                    {% if poll.is_active %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Cerrada</span>
+                                    {% endif %}
+                                </h4>
+                                <p class="text-muted">Estado</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4>
+                                    {% if poll.type == 'simple' %}
+                                        <span class="badge bg-success">Simple</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Ponderada</span>
+                                    {% endif %}
+                                </h4>
+                                <p class="text-muted">Tipo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados por Opción -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Desglose de Votos</h5>
+                </div>
+                <div class="card-body">
+                    {% if options_with_stats %}
+                        {% for item in options_with_stats %}
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        {% if item.option.image %}
+                                            <img src="{{ item.option.image.url }}" alt="{{ item.option.text }}" class="rounded" style="max-width: 80px; max-height: 60px; object-fit: cover; margin-right: 10px;">
+                                        {% endif %}
+                                        <strong>{{ item.option.text }}</strong>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">{{ item.vote_count }}</span>
+                                        <span class="text-muted">({{ item.percentage }}%)</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar {% if item.percentage == 100 %}bg-success{% elif item.percentage >= 50 %}bg-primary{% elif item.percentage >= 30 %}bg-info{% elif item.percentage > 0 %}bg-warning{% else %}bg-secondary{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ item.percentage }}%"
+                                         aria-valuenow="{{ item.percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ item.percentage }}%
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle"></i> Aún no hay votos registrados en esta encuesta.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descripción de la Encuesta -->
+    {% if poll.description %}
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Descripción</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ poll.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Botón Volver -->
+    <div class="row mt-4">
+        <div class="col-md-12 text-center">
+            <a href="{% url 'polls:list' poll.team.slug %}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-list"></i> Ver Todas las Encuestas
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

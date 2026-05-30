@@ -189,16 +189,21 @@
         <div class="card p-4 h-100">
             <div class="d-flex align-items-center justify-content-between mb-3">
                 <p class="section-label mb-0"><i class="bi bi-ballot me-2"></i>Votaciones</p>
-                {% if is_admin %}
-                    <a href="#" class="btn btn-primary btn-sm fw-bold">
-                        <i class="bi bi-plus-lg me-1"></i>Nueva votación
+                <div class="d-flex gap-2">
+                    <a href="{% url 'polls:list' team.slug %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+                        <i class="bi bi-eye me-1"></i>Ver todas
                     </a>
-                {% endif %}
+                    {% if is_admin %}
+                        <a href="{% url 'polls:create' team.slug %}" class="btn btn-primary btn-sm fw-bold">
+                            <i class="bi bi-plus-lg me-1"></i>Nueva votación
+                        </a>
+                    {% endif %}
+                </div>
             </div>
 
             {% if team.polls.all %}
                 {% for poll in team.polls.all %}
-                    <a href="#" class="poll-item">
+                    <a href="{% url 'polls:detail' team.slug poll.id %}" class="poll-item">
                         <span class="poll-dot {% if poll.is_active %}active{% else %}inactive{% endif %}"></span>
                         <div class="flex-grow-1">
                             <div class="fw-semibold" style="font-size:.9rem;">{{ poll.title }}</div>
