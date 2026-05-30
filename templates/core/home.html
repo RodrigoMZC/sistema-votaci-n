@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio — I LOVE{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-name {
+        background: linear-gradient(90deg, var(--red), #ff6b7a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .pulse-dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--red);
+        animation: pulse 2s infinite;
+        margin-right: .4rem;
+        vertical-align: middle;
+    }
+    @keyframes pulse {
+        0%   { box-shadow: 0 0 0 0   rgba(232,25,44,.5); }
+        70%  { box-shadow: 0 0 0 8px rgba(232,25,44,0); }
+        100% { box-shadow: 0 0 0 0   rgba(232,25,44,0); }
+    }
+    .stat-icon-wrap {
+        width: 46px; height: 46px;
+        border-radius: .75rem;
+        background: rgba(232,25,44,.12);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; color: var(--red);
+    }
+    .card-hover {
+        transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .card-hover:hover {
+        transform: translateY(-4px);
+        border-color: rgba(232,25,44,.25) !important;
+        box-shadow: 0 8px 24px rgba(232,25,44,.1) !important;
+    }
+    .action-link {
+        text-decoration: none;
+        color: inherit;
+        transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+    }
+    .action-link:hover {
+        border-color: rgba(232,25,44,.3) !important;
+        background: rgba(232,25,44,.04) !important;
+        transform: translateX(4px);
+        box-shadow: 0 4px 16px rgba(232,25,44,.08) !important;
+        color: inherit;
+    }
+    .action-icon {
+        width: 42px; height: 42px;
+        border-radius: .65rem;
+        background: rgba(232,25,44,.12);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; color: var(--red);
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ── -->
+<div class="row align-items-center mb-5">
+    <div class="col-lg-9">
+        <p class="mb-2 fw-semibold" style="font-size:.8rem;color:var(--red);text-transform:uppercase;letter-spacing:1px;">
+            <span class="pulse-dot"></span>En vivo
+        </p>
+        <h1 class="fw-black mb-2" style="font-size:clamp(2rem,5vw,3rem);letter-spacing:-1.5px;line-height:1.1;">
+            Hola, <span class="hero-name">{{ user.username }}</span> 👋
+        </h1>
+        <p class="text-secondary mb-0" style="font-size:1.05rem;max-width:460px;">
+            Selecciona un equipo, emite tu voto y ve los resultados en tiempo real.
+        </p>
+    </div>
+</div>
+
+<!-- ── Stats ── -->
+<div class="row g-3 mb-5">
+
+    <div class="col-6 col-md-3">
+        <div class="card card-hover p-3">
+            <div class="stat-icon-wrap mb-3"><i class="bi bi-people-fill"></i></div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Equipos</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-hover p-3">
+            <div class="stat-icon-wrap mb-3"><i class="bi bi-ballot-fill"></i></div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votaciones</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-hover p-3">
+            <div class="stat-icon-wrap mb-3"><i class="bi bi-check2-circle"></i></div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votos emitidos</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-hover p-3">
+            <div class="stat-icon-wrap mb-3"><i class="bi bi-trophy-fill"></i></div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Resultados</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Acciones rápidas ── -->
+<p class="text-secondary fw-bold mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;">
+    <i class="bi bi-lightning-charge me-1"></i>Acciones rápidas
+</p>
+<div class="row g-3">
+    <div class="col-md-4">
+        <a href="#" class="action-link card d-flex flex-row align-items-center gap-3 p-3">
+            <div class="action-icon"><i class="bi bi-people"></i></div>
+            <div class="flex-grow-1">
+                <div class="fw-semibold" style="font-size:.95rem;">Ver equipos</div>
+                <div class="text-secondary" style="font-size:.78rem;">Explora y únete a equipos</div>
+            </div>
+            <i class="bi bi-chevron-right text-secondary" style="font-size:.8rem;"></i>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'accounts:profile' %}" class="action-link card d-flex flex-row align-items-center gap-3 p-3">
+            <div class="action-icon"><i class="bi bi-person"></i></div>
+            <div class="flex-grow-1">
+                <div class="fw-semibold" style="font-size:.95rem;">Mi perfil</div>
+                <div class="text-secondary" style="font-size:.78rem;">Edita tu información</div>
+            </div>
+            <i class="bi bi-chevron-right text-secondary" style="font-size:.8rem;"></i>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a href="{% url 'accounts:password_change' %}" class="action-link card d-flex flex-row align-items-center gap-3 p-3">
+            <div class="action-icon"><i class="bi bi-shield-lock"></i></div>
+            <div class="flex-grow-1">
+                <div class="fw-semibold" style="font-size:.95rem;">Seguridad</div>
+                <div class="text-secondary" style="font-size:.78rem;">Cambia tu contraseña</div>
+            </div>
+            <i class="bi bi-chevron-right text-secondary" style="font-size:.8rem;"></i>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

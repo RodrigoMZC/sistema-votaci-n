@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-logo {
+        height: 34px;
+        filter: drop-shadow(0 0 10px rgba(232,25,44,.5));
+    }
+    .auth-divider {
+        display: flex; align-items: center; gap: 1rem;
+        color: var(--muted); font-size: .78rem;
+    }
+    .auth-divider::before,
+    .auth-divider::after {
+        content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .link-brand { color: var(--red); font-weight: 600; text-decoration: none; }
+    .link-brand:hover { color: var(--red-dark); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="margin-top:-3rem;">
+    <div class="card p-4 p-md-5 w-100" style="max-width:420px;">
+
+        <!-- Logo -->
+        <div class="text-center mb-4">
+            <img src="{% static 'img/logoIdle.png' %}" alt="I LOVE" class="auth-logo">
+        </div>
+
+        <!-- Título -->
+        <h1 class="fw-black text-center mb-1" style="font-size:1.6rem;letter-spacing:-.8px;">
+            Bienvenido de vuelta
+        </h1>
+        <p class="text-secondary text-center mb-4" style="font-size:.875rem;">
+            Inicia sesión para continuar
+        </p>
+
+        <!-- Form -->
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    <input type="{{ field.field.widget.input_type }}"
+                           name="{{ field.html_name }}"
+                           class="form-control {% if field.errors %}is-invalid{% endif %}"
+                           placeholder="{{ field.label }}"
+                           {% if field.value %}value="{{ field.value }}"{% endif %}>
+                    {% for error in field.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            <div class="text-end mb-3">
+                <a href="{% url 'accounts:password_reset' %}" class="link-brand" style="font-size:.8rem;">
+                    ¿Olvidaste tu contraseña?
+                </a>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary fw-bold">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                </button>
+            </div>
+        </form>
+
+        <div class="auth-divider my-3">o</div>
+
+        <p class="text-secondary text-center mb-0" style="font-size:.875rem;">
+            ¿No tienes cuenta?
+            <a href="{% url 'accounts:register' %}" class="link-brand ms-1">Créala gratis</a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}
