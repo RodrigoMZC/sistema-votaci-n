@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis votaciones{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-pill {
+        border: 1.5px solid var(--border);
+        background: #fff; color: var(--muted);
+        border-radius: 50px; font-size: .82rem; font-weight: 600;
+        padding: .35rem 1rem; text-decoration: none;
+        transition: all .15s;
+    }
+    .filter-pill:hover { border-color: var(--red); color: var(--red); }
+    .filter-pill.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+    .team-section-header {
+        display: flex; align-items: center; gap: .75rem;
+        margin-bottom: 1rem;
+    }
+    .team-logo-sm {
+        width: 36px; height: 36px; border-radius: .55rem;
+        object-fit: cover; flex-shrink: 0;
+    }
+    .team-logo-sm-placeholder {
+        width: 36px; height: 36px; border-radius: .55rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .85rem; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+
+    .poll-row {
+        display: flex; align-items: center; gap: .85rem;
+        padding: .85rem 0;
+        border-bottom: 1px solid var(--border);
+        text-decoration: none; color: inherit;
+        transition: background .15s;
+    }
+    .poll-row:last-child { border-bottom: none; }
+    .poll-row:hover { background: var(--surface-3); margin: 0 -.5rem;
+                      padding-left: .5rem; padding-right: .5rem; border-radius: .65rem; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+    .dot-active   { background: #22c55e; box-shadow: 0 0 5px rgba(34,197,94,.5); }
+    .dot-inactive { background: #d1d5db; }
+
+    .voted-chip {
+        display: inline-flex; align-items: center; gap: .3rem;
+        border-radius: 50px; padding: .18rem .6rem;
+        font-size: .68rem; font-weight: 700; flex-shrink: 0;
+    }
+
+    .empty-state { text-align: center; padding: 4rem 2rem; }
+    .empty-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: var(--surface-3); margin: 0 auto 1.2rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; color: var(--muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-start justify-content-between mb-4">
+    <div>
+        <h1 class="fw-black mb-1" style="font-size:1.7rem;letter-spacing:-1px;">Mis votaciones</h1>
+        <p class="text-secondary mb-0" style="font-size:.9rem;">
+            {{ total_polls }} votación{{ total_polls|pluralize:"es" }} en tus equipos
+        </p>
+    </div>
+    <a href="{% url 'teams:list' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+        <i class="bi bi-people me-1"></i>Mis equipos
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{% url 'polls:my_polls' %}"
+       class="filter-pill {% if filtro == 'todas' %}active{% endif %}">
+        Todas
+    </a>
+    <a href="{% url 'polls:my_polls' %}?estado=activas"
+       class="filter-pill {% if filtro == 'activas' %}active{% endif %}">
+        <i class="bi bi-lightning-fill me-1"></i>Activas
+    </a>
+    <a href="{% url 'polls:my_polls' %}?estado=cerradas"
+       class="filter-pill {% if filtro == 'cerradas' %}active{% endif %}">
+        <i class="bi bi-lock me-1"></i>Cerradas
+    </a>
+</div>
+
+{% if teams_with_polls %}
+
+    {% for item in teams_with_polls %}
+        <div class="mb-4">
+            <!-- Cabecera del equipo -->
+            <div class="team-section-header">
+                {% if item.team.logo %}
+                    <img src="{{ item.team.logo.url }}" class="team-logo-sm" alt="{{ item.team.name }}">
+                {% else %}
+                    <div class="team-logo-sm-placeholder"
+                         style="background:{{ item.team.primary_color }};">
+                        {{ item.team.name|first|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <a href="{% url 'teams:detail' item.team.slug %}"
+                       class="fw-bold text-decoration-none" style="font-size:.95rem;color:inherit;">
+                        {{ item.team.name }}
+                    </a>
+                    <div class="text-secondary" style="font-size:.76rem;">
+                        {{ item.polls|length }} votación{{ item.polls|length|pluralize:"es" }}
+                    </div>
+                </div>
+                <a href="{% url 'polls:list' item.team.slug %}"
+                   class="ms-auto btn btn-sm fw-semibold"
+                   style="font-size:.75rem;background:{{ item.team.primary_color }}1a;
+                          color:{{ item.team.primary_color }};border:1px solid {{ item.team.primary_color }}33;">
+                    Ver todas <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            <!-- Lista de polls del equipo -->
+            <div class="card px-4 py-2">
+                {% for poll in item.polls %}
+                    <a href="{% url 'polls:detail' item.team.slug poll.id %}" class="poll-row">
+                        <span class="status-dot {% if poll.is_active %}dot-active{% else %}dot-inactive{% endif %}"></span>
+
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="fw-semibold" style="font-size:.92rem;
+                                 overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+                                {{ poll.title }}
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                <span class="text-secondary" style="font-size:.76rem;">
+                                    <i class="bi bi-check2-circle me-1"></i>{{ poll.total_votes }} voto{{ poll.total_votes|pluralize }}
+                                </span>
+                                <span class="text-secondary" style="font-size:.76rem;">
+                                    <i class="bi bi-list-ul me-1"></i>{{ poll.options.count }} opciones
+                                </span>
+                                {% if poll.deadline %}
+                                    <span class="text-secondary" style="font-size:.76rem;">
+                                        <i class="bi bi-clock me-1"></i>{{ poll.deadline|date:"d M Y" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Estado de participación -->
+                        {% if poll.user_voted %}
+                            <span class="voted-chip"
+                                  style="background:{{ item.team.primary_color }}15;
+                                         color:{{ item.team.primary_color }};
+                                         border:1px solid {{ item.team.primary_color }}30;">
+                                <i class="bi bi-check2"></i> Votado
+                            </span>
+                        {% elif poll.is_active %}
+                            <span class="voted-chip"
+                                  style="background:rgba(234,179,8,.1);color:#ca8a04;border:1px solid rgba(234,179,8,.25);">
+                                <i class="bi bi-hand-index"></i> Pendiente
+                            </span>
+                        {% endif %}
+
+                        <i class="bi bi-chevron-right text-secondary" style="font-size:.75rem;"></i>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-ballot"></i></div>
+            <h5 class="fw-bold mb-2">
+                {% if filtro == 'activas' %}No hay votaciones activas
+                {% elif filtro == 'cerradas' %}No hay votaciones cerradas
+                {% else %}No hay votaciones todavía{% endif %}
+            </h5>
+            <p class="text-secondary mb-4" style="font-size:.9rem;max-width:340px;margin:0 auto;">
+                {% if filtro != 'todas' %}
+                    <a href="{% url 'polls:my_polls' %}" style="color:var(--red);">Ver todas las votaciones</a>
+                {% else %}
+                    Los administradores de tus equipos aún no han creado votaciones.
+                {% endif %}
+            </p>
+            <a href="{% url 'teams:list' %}" class="btn btn-primary fw-bold">
+                <i class="bi bi-people me-1"></i>Ver mis equipos
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

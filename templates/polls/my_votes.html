@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis votos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vote-row {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .vote-row:last-child { border-bottom: none; }
+
+    .team-dot {
+        width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .option-chip {
+        display: inline-flex; align-items: center; gap: .35rem;
+        border-radius: 50px; padding: .2rem .7rem;
+        font-size: .75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .poll-link {
+        text-decoration: none; color: inherit;
+        font-weight: 600; font-size: .92rem;
+        transition: color .15s;
+    }
+    .poll-link:hover { color: var(--red); }
+
+    .empty-state { text-align: center; padding: 4rem 2rem; }
+    .empty-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: var(--surface-3); margin: 0 auto 1.2rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; color: var(--muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-start justify-content-between mb-4">
+    <div>
+        <h1 class="fw-black mb-1" style="font-size:1.7rem;letter-spacing:-1px;">Mis votos</h1>
+        <p class="text-secondary mb-0" style="font-size:.9rem;">
+            Has emitido <strong>{{ total }}</strong> voto{{ total|pluralize }}
+        </p>
+    </div>
+    <a href="{% url 'polls:my_polls' %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+        <i class="bi bi-ballot me-1"></i>Ver votaciones
+    </a>
+</div>
+
+{% if votes %}
+    <div class="card p-4">
+        {% for vote in votes %}
+            <div class="vote-row">
+                <!-- Dot con color del equipo -->
+                <span class="team-dot"
+                      style="background:{{ vote.option.poll.team.primary_color }};
+                             box-shadow:0 0 6px {{ vote.option.poll.team.primary_color }}60;">
+                </span>
+
+                <!-- Info principal -->
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{% url 'polls:detail' vote.option.poll.team.slug vote.option.poll.id %}"
+                           class="poll-link">
+                            {{ vote.option.poll.title }}
+                        </a>
+                        {% if not vote.option.poll.is_active %}
+                            <span class="badge rounded-pill fw-semibold"
+                                  style="background:var(--surface-3);color:var(--muted);
+                                         border:1px solid var(--border);font-size:.65rem;">
+                                Cerrada
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                        <span class="text-secondary" style="font-size:.76rem;">
+                            <i class="bi bi-people me-1"></i>
+                            <a href="{% url 'teams:detail' vote.option.poll.team.slug %}"
+                               class="text-decoration-none text-secondary">
+                                {{ vote.option.poll.team.name }}
+                            </a>
+                        </span>
+                        <span class="text-secondary" style="font-size:.76rem;">
+                            <i class="bi bi-clock me-1"></i>{{ vote.voted_at|date:"d M Y · H:i" }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Opción votada -->
+                <span class="option-chip"
+                      style="background:{{ vote.option.poll.team.primary_color }}15;
+                             color:{{ vote.option.poll.team.primary_color }};
+                             border:1px solid {{ vote.option.poll.team.primary_color }}30;">
+                    <i class="bi bi-check2"></i>
+                    {{ vote.option.text|truncatechars:25 }}
+                </span>
+
+                <!-- Ir a resultados -->
+                <a href="{% url 'polls:results' vote.option.poll.team.slug vote.option.poll.id %}"
+                   class="btn btn-sm fw-semibold text-secondary"
+                   style="background:var(--surface-3);border:1px solid var(--border);font-size:.75rem;">
+                    <i class="bi bi-graph-up"></i>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-check2-circle"></i></div>
+            <h5 class="fw-bold mb-2">Aún no has votado</h5>
+            <p class="text-secondary mb-4" style="font-size:.9rem;max-width:340px;margin:0 auto;">
+                Participa en las votaciones activas de tus equipos.
+            </p>
+            <a href="{% url 'polls:my_polls' %}?estado=activas" class="btn btn-primary fw-bold">
+                <i class="bi bi-lightning-fill me-1"></i>Ver votaciones activas
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

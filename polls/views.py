@@ -2,11 +2,75 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, View
-from django.db.models import Count, Q
+from django.views.generic import ListView, DetailView, View, TemplateView
+from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from .models import Poll, Option, Vote
 from teams.models import Team, TeamMember
+
+
+class MyPollsView(LoginRequiredMixin, TemplateView):
+    """Todas las votaciones de todos los equipos del usuario."""
+    template_name = 'polls/my_polls.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        filtro = self.request.GET.get('estado', 'todas')
+
+        user_teams = Team.objects.filter(members__user=user).prefetch_related(
+            Prefetch(
+                'polls',
+                queryset=Poll.objects.annotate(
+                    total_votes=Count('options__votes')
+                ).order_by('-created_at'),
+                to_attr='all_polls'
+            )
+        )
+
+        teams_with_polls = []
+        total_polls = 0
+        for team in user_teams:
+            polls = team.all_polls
+            if filtro == 'activas':
+                polls = [p for p in polls if p.is_active]
+            elif filtro == 'cerradas':
+                polls = [p for p in polls if not p.is_active]
+
+            # Marcar si el usuario ya votó en cada encuesta
+            for poll in polls:
+                poll.user_voted = Vote.objects.filter(
+                    user=user, option__poll=poll
+                ).exists()
+
+            if polls:
+                teams_with_polls.append({'team': team, 'polls': polls})
+            total_polls += len(polls)
+
+        context['teams_with_polls'] = teams_with_polls
+        context['total_polls'] = total_polls
+        context['filtro'] = filtro
+        return context
+
+
+class MyVotesView(LoginRequiredMixin, TemplateView):
+    """Historial de votos emitidos por el usuario."""
+    template_name = 'polls/my_votes.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        votes = (
+            Vote.objects
+            .filter(user=user)
+            .select_related('option__poll__team', 'option')
+            .order_by('-voted_at')
+        )
+
+        context['votes'] = votes
+        context['total'] = votes.count()
+        return context
 
 
 class PollCreateView(LoginRequiredMixin, View):
@@ -100,12 +164,12 @@ class PollListView(LoginRequiredMixin, ListView):
             slug=self.kwargs['team_slug'],
             members__user=self.request.user
         )
+        # Muestra todas (activas y cerradas), activas primero
         return Poll.objects.filter(
-            team=self.team,
-            is_active=True
+            team=self.team
         ).annotate(
             vote_count=Count('options__votes')
-        ).order_by('-created_at')
+        ).order_by('-is_active', '-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -113,7 +177,6 @@ class PollListView(LoginRequiredMixin, ListView):
         context['is_admin'] = self.team.members.filter(
             user=self.request.user, role='admin'
         ).exists()
-        # Agregar conteo de votos a cada encuesta
         for poll in context['polls']:
             poll.total_votes = Vote.objects.filter(option__poll=poll).count()
         return context

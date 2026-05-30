@@ -1,153 +1,321 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ poll.title }} - Votación{% endblock %}
+{% block title %}{{ poll.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .poll-hero {
+        background: linear-gradient(135deg, {{ poll.team.primary_color }} 0%, {{ poll.team.secondary_color }} 100%);
+        border-radius: 1.2rem;
+        padding: 1.75rem 2rem;
+        color: #fff;
+        margin-bottom: 1.75rem;
+    }
+    .status-badge {
+        display: inline-flex; align-items: center; gap: .4rem;
+        background: rgba(255,255,255,.18); border-radius: 50px;
+        padding: .25rem .75rem; font-size: .78rem; font-weight: 600;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-active   { background: #86efac; box-shadow: 0 0 6px #86efac; }
+    .dot-inactive { background: rgba(255,255,255,.5); }
+
+    /* Opciones de voto */
+    .option-label {
+        display: block; cursor: pointer;
+        border: 2px solid var(--border);
+        border-radius: 1rem;
+        padding: 1rem 1.2rem;
+        transition: border-color .2s, background .2s, transform .15s;
+        position: relative;
+        background: #fff;
+    }
+    .option-label:hover {
+        border-color: {{ poll.team.primary_color }};
+        background: {{ poll.team.primary_color }}08;
+        transform: translateY(-1px);
+    }
+    input[type="radio"]:checked + .option-label {
+        border-color: {{ poll.team.primary_color }};
+        background: {{ poll.team.primary_color }}0d;
+        box-shadow: 0 0 0 3px {{ poll.team.primary_color }}20;
+    }
+    input[type="radio"] { display: none; }
+
+    .option-check {
+        width: 22px; height: 22px; border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: all .2s;
+    }
+    input[type="radio"]:checked + .option-label .option-check {
+        background: {{ poll.team.primary_color }};
+        border-color: {{ poll.team.primary_color }};
+    }
+
+    /* Opción ya votada */
+    .option-voted {
+        border-color: {{ poll.team.primary_color }};
+        background: {{ poll.team.primary_color }}0d;
+    }
+    .option-voted-badge {
+        display: inline-flex; align-items: center; gap: .3rem;
+        background: {{ poll.team.primary_color }}; color: #fff;
+        border-radius: 50px; padding: .15rem .6rem;
+        font-size: .7rem; font-weight: 700;
+    }
+
+    /* Info cards */
+    .info-chip {
+        display: flex; align-items: center; gap: .5rem;
+        background: var(--surface-3);
+        border: 1px solid var(--border);
+        border-radius: .65rem; padding: .55rem .9rem;
+        font-size: .82rem;
+    }
+    .info-chip-icon { color: {{ poll.team.primary_color }}; font-size: 1rem; }
+
+    /* Submit button */
+    .btn-vote {
+        background: {{ poll.team.primary_color }};
+        border: none; color: #fff;
+        font-weight: 700; border-radius: .75rem;
+        padding: .8rem; font-size: .95rem;
+        transition: opacity .2s, transform .15s, box-shadow .2s;
+        width: 100%;
+    }
+    .btn-vote:hover {
+        opacity: .9; transform: translateY(-1px);
+        box-shadow: 0 6px 20px {{ poll.team.primary_color }}40;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <!-- Encabezado -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <a href="{% url 'polls:list' poll.team.slug %}" class="btn btn-outline-secondary btn-sm mb-3">
-                ← Volver a Encuestas
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
             </a>
-            <h1>{{ poll.title }}</h1>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:detail' poll.team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                {{ poll.team.name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'polls:list' poll.team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                Votaciones
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">{{ poll.title|truncatechars:30 }}</li>
+    </ol>
+</nav>
+
+<!-- Hero -->
+<div class="poll-hero">
+    <div class="d-flex align-items-start justify-content-between gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="status-badge">
+                    <span class="status-dot {% if poll.is_active %}dot-active{% else %}dot-inactive{% endif %}"></span>
+                    {% if poll.is_active %}Activa{% else %}Cerrada{% endif %}
+                </span>
+                <span class="status-badge">
+                    {% if poll.type == 'simple' %}🗳️ Simple{% else %}⚖️ Ponderada{% endif %}
+                </span>
+            </div>
+            <h1 class="fw-black mb-1" style="font-size:1.6rem;letter-spacing:-.8px;">{{ poll.title }}</h1>
             {% if poll.description %}
-                <p class="lead text-muted">{{ poll.description }}</p>
+                <p class="mb-0" style="font-size:.9rem;opacity:.85;">{{ poll.description }}</p>
             {% endif %}
         </div>
+        {% if is_admin %}
+            <a href="{% url 'polls:results' poll.team.slug poll.id %}"
+               class="btn btn-sm fw-semibold flex-shrink-0"
+               style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.25);">
+                <i class="bi bi-graph-up me-1"></i>Resultados
+            </a>
+        {% endif %}
     </div>
+</div>
 
-    <!-- Información de la Encuesta -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h5 class="card-title">Información</h5>
-                    <ul class="list-unstyled">
-                        <li><strong>Tipo:</strong> 
-                            {% if poll.type == 'simple' %}
-                                <span class="badge bg-success">Votación Simple</span>
-                            {% else %}
-                                <span class="badge bg-info">Votación Ponderada</span>
-                            {% endif %}
-                        </li>
-                        <li><strong>Estado:</strong> 
-                            {% if poll.is_active %}
-                                <span class="badge bg-success">Activa</span>
-                            {% else %}
-                                <span class="badge bg-danger">Cerrada</span>
-                            {% endif %}
-                        </li>
-                        <li><strong>Votos registrados:</strong> <strong>{{ total_votes }}</strong></li>
-                        {% if poll.deadline %}
-                            <li><strong>Fecha límite:</strong> {{ poll.deadline|date:"d/m/Y H:i" }}</li>
-                        {% endif %}
-                        {% if poll.required_votes > 0 %}
-                            <li><strong>Votos requeridos:</strong> {{ poll.required_votes }}</li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h5 class="card-title">Mi Participación</h5>
-                    {% if has_voted %}
-                        <div class="alert alert-success mb-0" role="alert">
-                            <i class="bi bi-check-circle"></i>
-                            <strong>¡Ya has votado!</strong>
-                            <p class="mb-0 small mt-2">Tu voto ha sido registrado en esta encuesta.</p>
-                        </div>
-                    {% else %}
-                        {% if poll.is_active %}
-                            <div class="alert alert-info mb-0" role="alert">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>¿Aún no has votado?</strong>
-                                <p class="mb-0 small mt-2">Selecciona una opción abajo y confirma tu voto.</p>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-warning mb-0" role="alert">
-                                <i class="bi bi-exclamation-triangle"></i>
-                                <strong>Encuesta cerrada</strong>
-                                <p class="mb-0 small mt-2">No se pueden registrar más votos en esta encuesta.</p>
-                            </div>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="row g-4">
 
-    <!-- Opciones de Votación -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Opciones</h5>
-                </div>
-                <div class="card-body">
-                    {% if not has_voted and poll.is_active %}
-                        <form method="post" action="{% url 'polls:vote' poll.team.slug poll.id %}">
-                            {% csrf_token %}
-                            <div class="row">
-                                {% for option in poll.options.all %}
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                {% if option.image %}
-                                                    <img src="{{ option.image.url }}" alt="{{ option.text }}" class="img-fluid mb-3" style="max-height: 200px; object-fit: cover;">
-                                                {% endif %}
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="option_id" id="option_{{ option.id }}" value="{{ option.id }}" required>
-                                                    <label class="form-check-label" for="option_{{ option.id }}">
-                                                        <strong>{{ option.text }}</strong>
-                                                    </label>
+    <!-- Opciones de votación -->
+    <div class="col-lg-8">
+
+        {% if not has_voted and poll.is_active %}
+            <!-- Formulario de voto -->
+            <div class="card p-4">
+                <p class="fw-bold mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                    <i class="bi bi-hand-index me-1"></i>Selecciona una opción
+                </p>
+                <form method="post" action="{% url 'polls:vote' poll.team.slug poll.id %}" id="vote-form">
+                    {% csrf_token %}
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        {% for option in poll.options.all %}
+                            <div>
+                                <input type="radio" name="option_id" id="opt_{{ option.id }}" value="{{ option.id }}" required>
+                                <label class="option-label" for="opt_{{ option.id }}">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="option-check">
+                                            <i class="bi bi-check2 text-white" style="font-size:.7rem;"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {% if option.image %}
+                                                <img src="{{ option.image.url }}" alt="{{ option.text }}"
+                                                     class="rounded-3 mb-2 d-block"
+                                                     style="max-height:140px;object-fit:cover;width:100%;">
+                                            {% endif %}
+                                            <div class="fw-semibold" style="font-size:.95rem;">{{ option.text }}</div>
+                                            {% if poll.type == 'weighted' %}
+                                                <div class="text-secondary" style="font-size:.76rem;margin-top:.15rem;">
+                                                    Peso: {{ option.weight }}
                                                 </div>
-                                            </div>
+                                            {% endif %}
                                         </div>
                                     </div>
-                                {% endfor %}
+                                </label>
                             </div>
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-hand-thumbs-up"></i> Confirmar Voto
-                                </button>
-                            </div>
-                        </form>
-                    {% else %}
-                        <div class="row">
-                            {% for option in poll.options.all %}
-                                <div class="col-md-6 mb-3">
-                                    <div class="card {% if option.id in voted_options %}border-success bg-light{% endif %}">
-                                        <div class="card-body">
-                                            {% if option.image %}
-                                                <img src="{{ option.image.url }}" alt="{{ option.text }}" class="img-fluid mb-3" style="max-height: 200px; object-fit: cover;">
-                                            {% endif %}
-                                            <h5 class="card-title">{{ option.text }}</h5>
-                                            {% if option.id in voted_options %}
-                                                <div class="alert alert-success mb-0" role="alert">
-                                                    <i class="bi bi-check-circle"></i> Tu voto
-                                                </div>
-                                            {% endif %}
-                                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn-vote">
+                        <i class="bi bi-check2-circle me-2"></i>Confirmar voto
+                    </button>
+                </form>
+            </div>
+
+        {% else %}
+            <!-- Opciones sin form (ya votó o cerrada) -->
+            <div class="card p-4">
+                {% if has_voted %}
+                    <div class="d-flex align-items-center gap-2 mb-4 p-3 rounded-3"
+                         style="background:{{ poll.team.primary_color }}0d;border:1px solid {{ poll.team.primary_color }}30;">
+                        <i class="bi bi-check-circle-fill" style="color:{{ poll.team.primary_color }};font-size:1.1rem;"></i>
+                        <div>
+                            <div class="fw-bold" style="font-size:.9rem;">¡Ya has votado!</div>
+                            <div class="text-secondary" style="font-size:.78rem;">Tu voto fue registrado correctamente.</div>
+                        </div>
+                    </div>
+                {% elif not poll.is_active %}
+                    <div class="d-flex align-items-center gap-2 mb-4 p-3 rounded-3"
+                         style="background:var(--surface-3);border:1px solid var(--border);">
+                        <i class="bi bi-lock-fill text-secondary" style="font-size:1.1rem;"></i>
+                        <div>
+                            <div class="fw-bold" style="font-size:.9rem;">Votación cerrada</div>
+                            <div class="text-secondary" style="font-size:.78rem;">No se aceptan más votos.</div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <p class="fw-bold mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                    <i class="bi bi-list-ul me-1"></i>Opciones
+                </p>
+                <div class="d-flex flex-column gap-2">
+                    {% for option in options_with_votes %}
+                        <div class="option-label {% if option.id in voted_options %}option-voted{% endif %}"
+                             style="cursor:default;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="option-check"
+                                     {% if option.id in voted_options %}style="background:{{ poll.team.primary_color }};border-color:{{ poll.team.primary_color }};"{% endif %}>
+                                    {% if option.id in voted_options %}
+                                        <i class="bi bi-check2 text-white" style="font-size:.7rem;"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    {% if option.image %}
+                                        <img src="{{ option.image.url }}" alt="{{ option.text }}"
+                                             class="rounded-3 mb-2 d-block"
+                                             style="max-height:120px;object-fit:cover;width:100%;">
+                                    {% endif %}
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="fw-semibold" style="font-size:.95rem;">{{ option.text }}</div>
+                                        {% if option.id in voted_options %}
+                                            <span class="option-voted-badge">
+                                                <i class="bi bi-check2"></i> Tu voto
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-secondary" style="font-size:.76rem;margin-top:.1rem;">
+                                        {{ option.vote_count }} voto{{ option.vote_count|pluralize }}
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
                         </div>
-                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4">
+                    <a href="{% url 'polls:results' poll.team.slug poll.id %}"
+                       class="btn btn-vote" style="display:block;text-align:center;text-decoration:none;">
+                        <i class="bi bi-graph-up me-2"></i>Ver resultados detallados
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Info lateral -->
+    <div class="col-lg-4">
+        <div class="card p-4">
+            <p class="fw-bold mb-3" style="font-size:.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">
+                <i class="bi bi-info-circle me-1"></i>Información
+            </p>
+            <div class="d-flex flex-column gap-2">
+                <div class="info-chip">
+                    <i class="bi bi-check2-circle info-chip-icon"></i>
+                    <div>
+                        <div class="text-secondary" style="font-size:.72rem;">Votos registrados</div>
+                        <div class="fw-bold">{{ total_votes }}</div>
+                    </div>
+                </div>
+                <div class="info-chip">
+                    <i class="bi bi-list-ul info-chip-icon"></i>
+                    <div>
+                        <div class="text-secondary" style="font-size:.72rem;">Opciones</div>
+                        <div class="fw-bold">{{ poll.options.count }}</div>
+                    </div>
+                </div>
+                {% if poll.deadline %}
+                    <div class="info-chip">
+                        <i class="bi bi-calendar-event info-chip-icon"></i>
+                        <div>
+                            <div class="text-secondary" style="font-size:.72rem;">Fecha límite</div>
+                            <div class="fw-bold">{{ poll.deadline|date:"d M Y · H:i" }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if poll.required_votes > 0 %}
+                    <div class="info-chip">
+                        <i class="bi bi-people info-chip-icon"></i>
+                        <div>
+                            <div class="text-secondary" style="font-size:.72rem;">Votos para cerrar</div>
+                            <div class="fw-bold">{{ poll.required_votes }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="info-chip">
+                    <i class="bi bi-person-circle info-chip-icon"></i>
+                    <div>
+                        <div class="text-secondary" style="font-size:.72rem;">Creada por</div>
+                        <div class="fw-bold">{{ poll.created_by.username }}</div>
+                    </div>
+                </div>
+                <div class="info-chip">
+                    <i class="bi bi-calendar3 info-chip-icon"></i>
+                    <div>
+                        <div class="text-secondary" style="font-size:.72rem;">Creada el</div>
+                        <div class="fw-bold">{{ poll.created_at|date:"d M Y" }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Botón Ver Resultados -->
-    <div class="row mt-4">
-        <div class="col-md-12 text-center">
-            <a href="{% url 'polls:results' poll.team.slug poll.id %}" class="btn btn-outline-primary btn-lg">
-                <i class="bi bi-graph-up"></i> Ver Resultados Detallados
-            </a>
-        </div>
-    </div>
 </div>
 {% endblock %}

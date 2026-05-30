@@ -90,25 +90,25 @@
         </a>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card card-hover p-3">
+        <a href="{% url 'polls:my_polls' %}" class="card card-hover p-3 text-decoration-none text-reset d-block">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-ballot-fill"></i></div>
             <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ polls_count }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votaciones</div>
-        </div>
+        </a>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card card-hover p-3">
+        <a href="{% url 'polls:my_votes' %}" class="card card-hover p-3 text-decoration-none text-reset d-block">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-check2-circle"></i></div>
             <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ votes_count }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votos emitidos</div>
-        </div>
+        </a>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card card-hover p-3">
+        <a href="{% url 'polls:my_polls' %}?estado=activas" class="card card-hover p-3 text-decoration-none text-reset d-block">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-lightning-fill"></i></div>
             <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ active_polls }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Activas ahora</div>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -118,7 +118,7 @@
 </p>
 <div class="row g-3">
     <div class="col-md-4">
-        <a href="#" class="action-link card d-flex flex-row align-items-center gap-3 p-3">
+        <a href="{% url 'teams:list' %}" class="action-link card d-flex flex-row align-items-center gap-3 p-3">
             <div class="action-icon"><i class="bi bi-people"></i></div>
             <div class="flex-grow-1">
                 <div class="fw-semibold" style="font-size:.95rem;">Ver equipos</div>
