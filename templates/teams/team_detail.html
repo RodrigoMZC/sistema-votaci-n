@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ team.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-hero {
+        background: linear-gradient(135deg, {{ team.primary_color }} 0%, {{ team.secondary_color }} 100%);
+        border-radius: 1.2rem;
+        padding: 2rem;
+        color: #fff;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .team-hero::after {
+        content: '';
+        position: absolute;
+        right: -30px; top: -30px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.08);
+    }
+    .team-hero-logo {
+        width: 64px; height: 64px;
+        border-radius: 1rem;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,.4);
+    }
+    .team-hero-placeholder {
+        width: 64px; height: 64px;
+        border-radius: 1rem;
+        background: rgba(255,255,255,.18);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; font-weight: 900; color: #fff;
+        border: 3px solid rgba(255,255,255,.3);
+        flex-shrink: 0;
+    }
+    .stat-pill {
+        background: rgba(255,255,255,.15);
+        border-radius: 50px;
+        padding: .3rem .8rem;
+        font-size: .78rem;
+        font-weight: 600;
+        backdrop-filter: blur(4px);
+    }
+    .member-row {
+        display: flex; align-items: center; gap: .85rem;
+        padding: .75rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .member-row:last-child { border-bottom: none; }
+    .member-avatar {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+    }
+    .member-avatar-placeholder {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: var(--red);
+        display: flex; align-items: center; justify-content: center;
+        font-size: .85rem; font-weight: 800; color: #fff;
+        flex-shrink: 0;
+    }
+    .role-badge {
+        font-size: .68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px;
+        padding: .18rem .55rem; border-radius: 50px;
+    }
+    .role-admin  { background: {{ team.primary_color }}1a; color: {{ team.primary_color }}; border: 1px solid {{ team.primary_color }}44; }
+    .role-member { background: var(--surface-3); color: var(--muted); border: 1px solid var(--border); }
+    .section-label {
+        font-size: .75rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1px;
+        color: var(--muted); margin-bottom: 1rem;
+    }
+    .poll-item {
+        display: flex; align-items: center; gap: .75rem;
+        padding: .85rem 0;
+        border-bottom: 1px solid var(--border);
+        text-decoration: none; color: inherit;
+        transition: color .2s;
+    }
+    .poll-item:last-child { border-bottom: none; }
+    .poll-item:hover { color: var(--red); }
+    .poll-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .poll-dot.active   { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.5); }
+    .poll-dot.inactive { background: #d1d5db; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">{{ team.name }}</li>
+    </ol>
+</nav>
+
+<!-- Hero del equipo -->
+<div class="team-hero">
+    <div class="d-flex align-items-center gap-3 mb-3" style="position:relative;z-index:1;">
+        {% if team.logo %}
+            <img src="{{ team.logo.url }}" class="team-hero-logo" alt="{{ team.name }}">
+        {% else %}
+            <div class="team-hero-placeholder">{{ team.name|first|upper }}</div>
+        {% endif %}
+        <div>
+            <h1 class="fw-black mb-1" style="font-size:1.6rem;letter-spacing:-.8px;color:#fff;">
+                {{ team.name }}
+            </h1>
+            {% if team.description %}
+                <p class="mb-0" style="font-size:.875rem;opacity:.85;">{{ team.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap" style="position:relative;z-index:1;">
+        <span class="stat-pill"><i class="bi bi-people me-1"></i>{{ members.count }} miembro{{ members.count|pluralize }}</span>
+        <span class="stat-pill"><i class="bi bi-ballot me-1"></i>{{ team.polls.count }} votación{{ team.polls.count|pluralize:"es" }}</span>
+        <span class="stat-pill"><i class="bi bi-calendar3 me-1"></i>Creado el {{ team.created_at|date:"d M Y" }}</span>
+    </div>
+</div>
+
+<!-- Acciones admin -->
+{% if is_admin %}
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{% url 'teams:edit' team.slug %}" class="btn btn-outline-secondary btn-sm fw-semibold">
+        <i class="bi bi-pencil me-1"></i>Editar equipo
+    </a>
+    <a href="{% url 'teams:add_member' team.slug %}" class="btn btn-sm fw-bold"
+       style="background:{{ team.primary_color }};color:#fff;border:none;">
+        <i class="bi bi-person-plus me-1"></i>Agregar miembro
+    </a>
+    <a href="{% url 'teams:delete' team.slug %}" class="btn btn-sm fw-semibold"
+       style="background:var(--red-light);color:var(--red);border:1px solid rgba(232,25,44,.2);">
+        <i class="bi bi-trash me-1"></i>Eliminar equipo
+    </a>
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+    <!-- Miembros -->
+    <div class="col-lg-5">
+        <div class="card p-4 h-100">
+            <p class="section-label"><i class="bi bi-people me-2"></i>Miembros ({{ members.count }})</p>
+            {% for membership in members %}
+                <div class="member-row">
+                    {% if membership.user.avatar %}
+                        <img src="{{ membership.user.avatar.url }}" class="member-avatar" alt="{{ membership.user.username }}">
+                    {% else %}
+                        <div class="member-avatar-placeholder">{{ membership.user.username|first|upper }}</div>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" style="font-size:.9rem;">{{ membership.user.username }}</div>
+                        <div class="text-secondary" style="font-size:.76rem;">
+                            Desde {{ membership.joined_at|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <span class="role-badge role-{{ membership.role }}">{{ membership.get_role_display }}</span>
+                    {% if is_admin and membership.user != request.user %}
+                        <a href="{% url 'teams:remove_member' membership.id %}"
+                           class="btn btn-sm p-1 ms-1"
+                           style="color:#d1d5db;line-height:1;" title="Remover">
+                            <i class="bi bi-x-lg" style="font-size:.7rem;"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Votaciones -->
+    <div class="col-lg-7">
+        <div class="card p-4 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <p class="section-label mb-0"><i class="bi bi-ballot me-2"></i>Votaciones</p>
+                {% if is_admin %}
+                    <a href="#" class="btn btn-primary btn-sm fw-bold">
+                        <i class="bi bi-plus-lg me-1"></i>Nueva votación
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if team.polls.all %}
+                {% for poll in team.polls.all %}
+                    <a href="#" class="poll-item">
+                        <span class="poll-dot {% if poll.is_active %}active{% else %}inactive{% endif %}"></span>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold" style="font-size:.9rem;">{{ poll.title }}</div>
+                            <div class="text-secondary" style="font-size:.76rem;">
+                                {{ poll.options.count }} opción{{ poll.options.count|pluralize:"es" }}
+                                &nbsp;·&nbsp;
+                                {{ poll.get_type_display }}
+                                {% if poll.deadline %}
+                                    &nbsp;·&nbsp; Cierra {{ poll.deadline|date:"d M Y" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if poll.is_active %}
+                            <span class="badge rounded-pill fw-semibold"
+                                  style="background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.2);font-size:.68rem;">
+                                Activa
+                            </span>
+                        {% else %}
+                            <span class="badge rounded-pill fw-semibold"
+                                  style="background:var(--surface-3);color:var(--muted);border:1px solid var(--border);font-size:.68rem;">
+                                Cerrada
+                            </span>
+                        {% endif %}
+                        <i class="bi bi-chevron-right text-secondary ms-1" style="font-size:.75rem;"></i>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-ballot" style="font-size:2rem;color:#d1d5db;"></i>
+                    <p class="text-secondary mt-2 mb-0" style="font-size:.875rem;">
+                        No hay votaciones todavía.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

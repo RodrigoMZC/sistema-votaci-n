@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar {{ team.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .danger-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: rgba(232,25,44,.08); border: 1px solid rgba(232,25,44,.2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; color: var(--red);
+        margin: 0 auto 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:detail' team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                {{ team.name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">Eliminar</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4 p-md-5 text-center">
+
+            <div class="danger-icon"><i class="bi bi-trash"></i></div>
+
+            <h2 class="fw-black mb-2" style="font-size:1.4rem;letter-spacing:-.5px;">
+                ¿Eliminar "{{ team.name }}"?
+            </h2>
+            <p class="text-secondary mb-4" style="font-size:.9rem;line-height:1.6;">
+                Esta acción es <strong>permanente</strong>. Se eliminarán todos los miembros,
+                votaciones y datos asociados al equipo.
+            </p>
+
+            <!-- Info del equipo a eliminar -->
+            <div class="d-flex justify-content-center gap-3 mb-4">
+                <span class="text-secondary" style="font-size:.82rem;">
+                    <i class="bi bi-people me-1"></i>{{ team.members.count }} miembro{{ team.members.count|pluralize }}
+                </span>
+                <span class="text-secondary" style="font-size:.82rem;">
+                    <i class="bi bi-ballot me-1"></i>{{ team.polls.count }} votación{{ team.polls.count|pluralize:"es" }}
+                </span>
+            </div>
+
+            <form method="post" class="d-grid gap-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary fw-bold">
+                    <i class="bi bi-trash me-2"></i>Sí, eliminar equipo
+                </button>
+                <a href="{% url 'teams:detail' team.slug %}" class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

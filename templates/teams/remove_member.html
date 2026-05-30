@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Remover miembro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .warning-icon {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.25);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; color: #ca8a04;
+        margin: 0 auto 1.2rem;
+    }
+    .member-preview {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: .85rem;
+        padding: 1rem 1.2rem;
+        display: flex; align-items: center; gap: .85rem;
+        margin-bottom: 1.5rem;
+    }
+    .member-avatar-placeholder {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: var(--red);
+        display: flex; align-items: center; justify-content: center;
+        font-size: .9rem; font-weight: 800; color: #fff;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:detail' object.team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                {{ object.team.name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">Remover miembro</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card p-4 p-md-5 text-center">
+
+            <div class="warning-icon"><i class="bi bi-person-dash"></i></div>
+
+            <h2 class="fw-black mb-2" style="font-size:1.4rem;letter-spacing:-.5px;">
+                ¿Remover miembro?
+            </h2>
+            <p class="text-secondary mb-4" style="font-size:.9rem;line-height:1.6;">
+                El usuario perderá acceso al equipo y sus votaciones.
+            </p>
+
+            <!-- Preview del miembro -->
+            <div class="member-preview text-start">
+                {% if object.user.avatar %}
+                    <img src="{{ object.user.avatar.url }}" width="40" height="40"
+                         class="rounded-circle object-fit-cover flex-shrink-0"
+                         style="border:2px solid var(--border);">
+                {% else %}
+                    <div class="member-avatar-placeholder">{{ object.user.username|first|upper }}</div>
+                {% endif %}
+                <div>
+                    <div class="fw-bold" style="font-size:.9rem;">{{ object.user.username }}</div>
+                    <div class="text-secondary" style="font-size:.78rem;">
+                        {{ object.get_role_display }} &nbsp;·&nbsp; {{ object.team.name }}
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="d-grid gap-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary fw-bold">
+                    <i class="bi bi-person-dash me-2"></i>Sí, remover miembro
+                </button>
+                <a href="{% url 'teams:detail' object.team.slug %}" class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

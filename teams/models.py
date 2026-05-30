@@ -8,7 +8,10 @@ class Team(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True, blank=True)
+    logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     description = models.TextField(blank=True)
+    primary_color   = models.CharField(max_length=7, default='#E8192C', help_text='Color principal en hex')
+    secondary_color = models.CharField(max_length=7, default='#1a1a2e', help_text='Color secundario en hex')
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

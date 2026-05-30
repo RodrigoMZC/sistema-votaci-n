@@ -83,31 +83,31 @@
 <div class="row g-3 mb-5">
 
     <div class="col-6 col-md-3">
-        <div class="card card-hover p-3">
+        <a href="{% url 'teams:list' %}" class="card card-hover p-3 text-decoration-none text-reset d-block">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-people-fill"></i></div>
-            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ teams_count }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Equipos</div>
-        </div>
+        </a>
     </div>
     <div class="col-6 col-md-3">
         <div class="card card-hover p-3">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-ballot-fill"></i></div>
-            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ polls_count }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votaciones</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="card card-hover p-3">
             <div class="stat-icon-wrap mb-3"><i class="bi bi-check2-circle"></i></div>
-            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ votes_count }}</div>
             <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Votos emitidos</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="card card-hover p-3">
-            <div class="stat-icon-wrap mb-3"><i class="bi bi-trophy-fill"></i></div>
-            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">—</div>
-            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Resultados</div>
+            <div class="stat-icon-wrap mb-3"><i class="bi bi-lightning-fill"></i></div>
+            <div class="fw-black" style="font-size:1.9rem;letter-spacing:-1px;line-height:1;">{{ active_polls }}</div>
+            <div class="text-secondary mt-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Activas ahora</div>
         </div>
     </div>
 </div>

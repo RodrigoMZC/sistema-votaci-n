@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar miembro — {{ team.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .section-label {
+        font-size: .75rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1px;
+        color: var(--muted);
+        padding-bottom: .75rem;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb" style="font-size:.85rem;">
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:list' %}" class="text-decoration-none" style="color:var(--muted);">
+                <i class="bi bi-people me-1"></i>Equipos
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'teams:detail' team.slug %}" class="text-decoration-none" style="color:var(--muted);">
+                {{ team.name }}
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-secondary">Agregar miembro</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div style="width:44px;height:44px;border-radius:.75rem;background:var(--red-light);
+                        display:flex;align-items:center;justify-content:center;
+                        color:var(--red);font-size:1.2rem;border:1px solid rgba(232,25,44,.15);">
+                <i class="bi bi-person-plus"></i>
+            </div>
+            <div>
+                <h1 class="fw-black mb-0" style="font-size:1.4rem;letter-spacing:-.8px;">Agregar miembro</h1>
+                <p class="text-secondary mb-0" style="font-size:.85rem;">
+                    Equipo: <strong>{{ team.name }}</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="card p-4">
+            <p class="section-label"><i class="bi bi-person me-2"></i>Datos del nuevo miembro</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label">Usuario</label>
+                    <select name="user" class="form-select {% if form.user.errors %}is-invalid{% endif %}">
+                        <option value="">— Selecciona un usuario —</option>
+                        {% for choice in form.user.field.choices %}
+                            {% if choice.0 %}
+                                <option value="{{ choice.0 }}"
+                                    {% if form.user.value == choice.0|stringformat:"s" %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    {% for error in form.user.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Rol</label>
+                    <select name="role" class="form-select {% if form.role.errors %}is-invalid{% endif %}">
+                        {% for value, label in form.role.field.choices %}
+                            <option value="{{ value }}"
+                                {% if form.role.value == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% for error in form.role.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                    <div class="form-text">
+                        Los <strong>administradores</strong> pueden editar el equipo y gestionar miembros.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary fw-bold">
+                        <i class="bi bi-person-check me-1"></i>Agregar miembro
+                    </button>
+                    <a href="{% url 'teams:detail' team.slug %}" class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis equipos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-card {
+        text-decoration: none;
+        color: inherit;
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+        display: block;
+    }
+    .team-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 28px rgba(0,0,0,.1) !important;
+        border-color: rgba(0,0,0,.15) !important;
+        color: inherit;
+    }
+    .team-logo {
+        width: 52px; height: 52px;
+        border-radius: .85rem;
+        object-fit: cover;
+        border: 2px solid var(--border);
+    }
+    .team-logo-placeholder {
+        width: 52px; height: 52px;
+        border-radius: .85rem;
+        background: var(--red-light);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; font-weight: 900;
+        color: var(--red);
+        border: 2px solid rgba(232,25,44,.15);
+        flex-shrink: 0;
+    }
+    .role-badge {
+        font-size: .68rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .5px;
+        padding: .2rem .55rem; border-radius: 50px;
+    }
+    .role-admin  { background: rgba(232,25,44,.1);  color: var(--red);    border: 1px solid rgba(232,25,44,.2); }
+    .role-member { background: var(--surface-3);    color: var(--muted);  border: 1px solid var(--border); }
+    .empty-state {
+        text-align: center; padding: 4rem 2rem;
+    }
+    .empty-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        background: var(--surface-3); margin: 0 auto 1.2rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; color: var(--muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h1 class="fw-black mb-1" style="font-size:1.7rem;letter-spacing:-1px;">Mis equipos</h1>
+        <p class="text-secondary mb-0" style="font-size:.9rem;">Equipos en los que participas</p>
+    </div>
+    <a href="{% url 'teams:create' %}" class="btn btn-primary fw-bold">
+        <i class="bi bi-plus-lg me-1"></i>Nuevo equipo
+    </a>
+</div>
+
+{% if teams %}
+    <div class="row g-3">
+        {% for team in teams %}
+            {% with membership=team.members.all %}
+            <div class="col-md-6 col-lg-4">
+                <a href="{% url 'teams:detail' team.slug %}" class="team-card card p-4">
+                    <div class="d-flex align-items-start gap-3">
+                        {% if team.logo %}
+                            <img src="{{ team.logo.url }}" class="team-logo" alt="{{ team.name }}">
+                        {% else %}
+                            <div class="team-logo-placeholder"
+                                 style="background:{{ team.primary_color }};border-color:{{ team.primary_color }}22;color:#fff;">
+                                {{ team.name|first|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                <span class="fw-bold" style="font-size:.95rem;">{{ team.name }}</span>
+                                {% for m in team.members.all %}
+                                    {% if m.user == request.user %}
+                                        <span class="role-badge role-{{ m.role }}">{{ m.get_role_display }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% if team.description %}
+                                <p class="text-secondary mb-2" style="font-size:.82rem;line-height:1.4;
+                                   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                                    {{ team.description }}
+                                </p>
+                            {% endif %}
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <span class="text-secondary" style="font-size:.78rem;">
+                                    <i class="bi bi-people me-1"></i>{{ team.members.count }} miembro{{ team.members.count|pluralize }}
+                                </span>
+                                <span class="text-secondary" style="font-size:.78rem;">
+                                    <i class="bi bi-ballot me-1"></i>{{ team.polls.count }} votación{{ team.polls.count|pluralize:"es" }}
+                                </span>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right text-secondary" style="font-size:.8rem;margin-top:.2rem;"></i>
+                    </div>
+                </a>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-people"></i></div>
+            <h5 class="fw-bold mb-2">Todavía no perteneces a ningún equipo</h5>
+            <p class="text-secondary mb-4" style="font-size:.9rem;max-width:340px;margin:0 auto;">
+                Crea el tuyo o pídele a un administrador que te invite.
+            </p>
+            <a href="{% url 'teams:create' %}" class="btn btn-primary fw-bold">
+                <i class="bi bi-plus-lg me-1"></i>Crear mi primer equipo
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}
