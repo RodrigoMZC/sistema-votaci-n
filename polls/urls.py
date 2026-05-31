@@ -11,4 +11,6 @@ urlpatterns = [
     path('team/<slug:team_slug>/<uuid:poll_id>/', views.PollDetailView.as_view(), name='detail'),
     path('team/<slug:team_slug>/<uuid:poll_id>/vote/', views.PollVoteView.as_view(), name='vote'),
     path('team/<slug:team_slug>/<uuid:poll_id>/results/', views.PollResultsView.as_view(), name='results'),
+    path('team/<slug:team_slug>/<uuid:poll_id>/edit/', views.PollUpdateView.as_view(), name='edit'),
+    path('team/<slug:team_slug>/<uuid:poll_id>/delete/', views.PollDeleteView.as_view(), name='delete'),
 ]

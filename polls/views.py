@@ -18,6 +18,14 @@ class MyPollsView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         filtro = self.request.GET.get('estado', 'todas')
 
+        # Cerrar automáticamente encuestas con deadline vencida
+        stale = Poll.objects.filter(
+            team__members__user=user,
+            is_active=True
+        ).distinct()
+        for poll in stale:
+            poll.check_and_close()
+
         user_teams = Team.objects.filter(members__user=user).prefetch_related(
             Prefetch(
                 'polls',
@@ -164,6 +172,10 @@ class PollListView(LoginRequiredMixin, ListView):
             slug=self.kwargs['team_slug'],
             members__user=self.request.user
         )
+        # Cerrar automáticamente las encuestas con deadline vencida antes de listar
+        for poll in Poll.objects.filter(team=self.team, is_active=True):
+            poll.check_and_close()
+
         # Muestra todas (activas y cerradas), activas primero
         return Poll.objects.filter(
             team=self.team
@@ -196,6 +208,12 @@ class PollDetailView(LoginRequiredMixin, DetailView):
             members__user=self.request.user
         )
         return Poll.objects.filter(team=team)
+
+    def get_object(self, queryset=None):
+        poll = super().get_object(queryset)
+        # Cerrar automáticamente si el plazo venció o se alcanzaron los votos
+        poll.check_and_close()
+        return poll
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -320,3 +338,127 @@ class PollResultsView(LoginRequiredMixin, DetailView):
         ).exists()
 
         return context
+
+
+class PollUpdateView(LoginRequiredMixin, View):
+    """Editar título, descripción, configuración y opciones de una encuesta."""
+    template_name = 'polls/poll_edit.html'
+
+    def _get_poll_or_403(self, request, team_slug, poll_id):
+        team = get_object_or_404(Team, slug=team_slug, members__user=request.user)
+        poll = get_object_or_404(Poll, id=poll_id, team=team)
+        if not team.members.filter(user=request.user, role='admin').exists():
+            return None, None
+        return team, poll
+
+    def get(self, request, team_slug, poll_id):
+        team, poll = self._get_poll_or_403(request, team_slug, poll_id)
+        if poll is None:
+            messages.error(request, 'Solo los administradores pueden editar votaciones.')
+            return redirect('polls:detail', team_slug=team_slug, poll_id=poll_id)
+        return render(request, self.template_name, {'team': team, 'poll': poll})
+
+    def post(self, request, team_slug, poll_id):
+        team, poll = self._get_poll_or_403(request, team_slug, poll_id)
+        if poll is None:
+            messages.error(request, 'Solo los administradores pueden editar votaciones.')
+            return redirect('polls:detail', team_slug=team_slug, poll_id=poll_id)
+
+        title          = request.POST.get('title', '').strip()
+        description    = request.POST.get('description', '').strip()
+        poll_type      = request.POST.get('type', poll.type)
+        required_votes = request.POST.get('required_votes', '0').strip() or '0'
+        deadline_raw   = request.POST.get('deadline', '').strip()
+        is_active      = request.POST.get('is_active') == 'on'
+        option_ids     = request.POST.getlist('option_id')
+        option_texts   = request.POST.getlist('option_text')
+        option_weights = request.POST.getlist('option_weight')
+
+        if not title:
+            messages.error(request, 'El título es obligatorio.')
+            return render(request, self.template_name, {'team': team, 'poll': poll})
+
+        options_clean = [(oid, t.strip(), w) for oid, t, w in
+                         zip(option_ids, option_texts, option_weights) if t.strip()]
+        if len(options_clean) < 2:
+            messages.error(request, 'Debe haber al menos 2 opciones.')
+            return render(request, self.template_name, {'team': team, 'poll': poll})
+
+        # Actualizar campos del poll
+        deadline = None
+        if deadline_raw:
+            from django.utils.dateparse import parse_datetime
+            deadline = parse_datetime(deadline_raw)
+            if deadline and timezone.is_naive(deadline):
+                deadline = timezone.make_aware(deadline)
+
+        poll.title          = title
+        poll.description    = description
+        poll.type           = poll_type if poll_type in ('simple', 'weighted') else 'simple'
+        poll.required_votes = int(required_votes) if required_votes.isdigit() else 0
+        poll.deadline       = deadline
+        poll.is_active      = is_active
+        poll.save()
+
+        # Actualizar opciones existentes / agregar nuevas
+        existing_ids = set(str(o.id) for o in poll.options.all())
+        submitted_ids = set()
+
+        for oid, text, weight in options_clean:
+            try:
+                w = float(weight) if weight else 1.0
+            except ValueError:
+                w = 1.0
+
+            if oid and oid in existing_ids:
+                # Actualizar opción existente
+                poll.options.filter(id=oid).update(
+                    text=text,
+                    weight=w if poll.type == 'weighted' else 1.0
+                )
+                submitted_ids.add(oid)
+            else:
+                # Nueva opción
+                opt = Option.objects.create(poll=poll, text=text, weight=w)
+                submitted_ids.add(str(opt.id))
+
+        # Eliminar opciones que ya no están (solo si no tienen votos)
+        for opt in poll.options.all():
+            if str(opt.id) not in submitted_ids:
+                if not opt.votes.exists():
+                    opt.delete()
+
+        messages.success(request, f'Votación "{poll.title}" actualizada correctamente.')
+        return redirect('polls:detail', team_slug=team_slug, poll_id=poll_id)
+
+
+class PollDeleteView(LoginRequiredMixin, View):
+    """Eliminar una encuesta (solo admins)."""
+    template_name = 'polls/poll_confirm_delete.html'
+
+    def _get_poll_or_403(self, request, team_slug, poll_id):
+        team = get_object_or_404(Team, slug=team_slug, members__user=request.user)
+        poll = get_object_or_404(Poll, id=poll_id, team=team)
+        if not team.members.filter(user=request.user, role='admin').exists():
+            return None, None
+        return team, poll
+
+    def get(self, request, team_slug, poll_id):
+        team, poll = self._get_poll_or_403(request, team_slug, poll_id)
+        if poll is None:
+            messages.error(request, 'Solo los administradores pueden eliminar votaciones.')
+            return redirect('polls:detail', team_slug=team_slug, poll_id=poll_id)
+        total_votes = Vote.objects.filter(option__poll=poll).count()
+        return render(request, self.template_name, {
+            'team': team, 'poll': poll, 'total_votes': total_votes
+        })
+
+    def post(self, request, team_slug, poll_id):
+        team, poll = self._get_poll_or_403(request, team_slug, poll_id)
+        if poll is None:
+            messages.error(request, 'Solo los administradores pueden eliminar votaciones.')
+            return redirect('polls:detail', team_slug=team_slug, poll_id=poll_id)
+        name = poll.title
+        poll.delete()
+        messages.success(request, f'Votación "{name}" eliminada.')
+        return redirect('teams:detail', slug=team_slug)

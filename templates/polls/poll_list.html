@@ -153,14 +153,21 @@
 
                     <div class="d-flex gap-2 mt-3">
                         {% if poll.is_active %}
-                            <span class="btn btn-sm fw-bold w-100"
+                            <span class="btn btn-sm fw-bold flex-grow-1"
                                   style="background:{{ team.primary_color }};color:#fff;border:none;font-size:.8rem;">
                                 <i class="bi bi-hand-index me-1"></i>Votar
                             </span>
                         {% else %}
-                            <span class="btn btn-sm fw-semibold w-100 btn-outline-secondary" style="font-size:.8rem;">
-                                <i class="bi bi-graph-up me-1"></i>Ver resultados
+                            <span class="btn btn-sm fw-semibold flex-grow-1 btn-outline-secondary" style="font-size:.8rem;">
+                                <i class="bi bi-graph-up me-1"></i>Resultados
                             </span>
+                        {% endif %}
+                        {% if is_admin %}
+                            <a href="{% url 'polls:edit' team.slug poll.id %}"
+                               class="btn btn-sm btn-outline-secondary fw-semibold"
+                               style="font-size:.8rem;" onclick="event.stopPropagation();">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         {% endif %}
                     </div>
                 </a>

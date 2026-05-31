@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.urls import reverse
 from teams.models import Team
 from django.utils import timezone
 import uuid
@@ -27,7 +28,13 @@ class Poll(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+    def get_absolute_url(self):
+        return reverse('polls:detail', kwargs={
+            'team_slug': self.team.slug,
+            'poll_id': self.id,
+        })
+
     def check_and_close(self):
         # Cierra la encuesta si se cumple alguna condicion de cierre.
         total_votes = Vote.objects.filter(option__poll=self).count()
