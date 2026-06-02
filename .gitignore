@@ -9,3 +9,5 @@ media/
 .DS_Store
 *.egg-info/
 dist/
+entregables/
+.venv/

@@ -3,8 +3,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Team, TeamMember
 from .forms import TeamForm, TeamMemberForm
+from .serializers import TeamSerializer, TeamMemberSerializer
 
 
 class TeamListView(LoginRequiredMixin, ListView):
@@ -116,3 +120,62 @@ class RemoveMemberView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 
     def get_success_url(self):
         return reverse_lazy('teams:detail', kwargs={'slug': self.object.team.slug})
+    
+class TeamListAPIView(generics.ListCreateAPIView):
+    serializer_class = TeamSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Team.objects.filter(members__user=self.request.user)
+    
+    def perform_create(self, serializer):
+        team = serializer.save(created_by=self.request.user)
+        TeamMember.objects.get_or_create(team=team, user=self.request.user, defaults={'role': 'admin'})
+
+class TeamDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TeamSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        return Team.objects.filter(members__user=self.request.user)
+    
+    def perform_update(self, serializer):
+        team = self.get_object()
+        is_admin = team.members.filter(user=self.request.user, role='admin').exists()
+
+        if not is_admin:
+            raise permissions.PermissionDenied('Solo los administradores pueden editar el equipo.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        is_admin = instance.members.filter(user=self.request.user, role='admin').exists()
+        if not is_admin:
+            raise permissions.PermissionDenied('Solo los administradores pueden eliminar el equipo.')
+        instance.delete()
+
+class TeamMemberAPIView(generics.ListCreateAPIView):
+    serializer_class = TeamMemberSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        team = get_object_or_404(Team, slug=self.kwargs['slug'])
+        return team.members.select_related('user')
+
+    def perform_create(self, serializer):
+        team = get_object_or_404(Team, slug=self.kwargs['slug'])
+        is_admin = team.members.filter(user=self.request.user, role='admin').exists()
+        if not is_admin:
+            raise permissions.PermissionDenied('Solo los administradores pueden agregar miembros.')
+        serializer.save(team=team)
+
+class RemoveMemberAPIView(generics.DestroyAPIView):
+    serializer_class = TeamMemberSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        team = get_object_or_404(Team, slug=self.kwargs['slug'])
+        is_admin = team.members.filter(user=self.request.user, role='admin').exists()
+        if not is_admin:
+            raise permissions.PermissionDenied('Solo los administradores pueden remover miembros.')
+        return get_object_or_404(TeamMember, pk=self.kwargs['pk'], team=team)

@@ -7,6 +7,10 @@ from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from .models import Poll, Option, Vote
 from teams.models import Team, TeamMember
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .serializers import PollSerializer, VoteSerializer, PollResultsSerializer
 
 
 class MyPollsView(LoginRequiredMixin, TemplateView):
@@ -462,3 +466,55 @@ class PollDeleteView(LoginRequiredMixin, View):
         poll.delete()
         messages.success(request, f'Votación "{name}" eliminada.')
         return redirect('teams:detail', slug=team_slug)
+
+class PollListAPIView(generics.ListCreateAPIView):
+    serializer_class = PollSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_team(self):
+        return get_object_or_404(Team, slug=self.kwargs['team_slug'])
+
+    def get_queryset(self):
+        team = self.get_team()
+        return Poll.objects.filter(team=team).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        team = self.get_team()
+        is_member = team.members.filter(user=self.request.user).exists()
+        if not is_member:
+            raise permissions.PermissionDenied('No eres miembro de este equipo.')
+        serializer.save(team=team, created_by=self.request.user)
+
+class PollDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PollSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+    lookup_url_kwarg = 'poll_id'
+
+    def get_queryset(self):
+        team = get_object_or_404(Team, slug=self.kwargs['team_slug'])
+        return Poll.objects.filter(team=team)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+class PollVoteAPIView(generics.CreateAPIView):
+    serializer_class = VoteSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
+class PollResultsAPIView(generics.RetrieveAPIView):
+    serializer_class = PollResultsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+    lookup_url_kwarg = 'poll_id'
+
+    def get_queryset(self):
+        team = get_object_or_404(Team, slug=self.kwargs['team_slug'])
+        return Poll.objects.filter(team=team)
