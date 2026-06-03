@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
@@ -9,6 +10,8 @@ from rest_framework.views import APIView
 from .models import Team, TeamMember
 from .forms import TeamForm, TeamMemberForm
 from .serializers import TeamSerializer, TeamMemberSerializer
+
+User = get_user_model()
 
 
 class TeamListView(LoginRequiredMixin, ListView):
@@ -167,7 +170,19 @@ class TeamMemberAPIView(generics.ListCreateAPIView):
         is_admin = team.members.filter(user=self.request.user, role='admin').exists()
         if not is_admin:
             raise permissions.PermissionDenied('Solo los administradores pueden agregar miembros.')
-        serializer.save(team=team)
+
+        username = self.request.data.get('username')
+        if not username:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'username': 'Este campo es requerido.'})
+
+        user = get_object_or_404(User, username=username)
+
+        if team.members.filter(user=user).exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'username': f'"{username}" ya es miembro de este equipo.'})
+
+        serializer.save(team=team, user=user)
 
 class RemoveMemberAPIView(generics.DestroyAPIView):
     serializer_class = TeamMemberSerializer
